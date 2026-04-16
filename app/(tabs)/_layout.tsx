@@ -1,3 +1,4 @@
+//Tabs layout for the app, contains the bottom tab navigator and its screens
 import { Tabs } from 'expo-router';
 import React from 'react';
 
