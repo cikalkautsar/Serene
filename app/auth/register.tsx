@@ -1,10 +1,79 @@
+import React, { useState } from 'react';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { 
+  Pressable, 
+  SafeAreaView, 
+  ScrollView, 
+  StyleSheet, 
+  Text, 
+  TextInput, 
+  View, 
+  Alert, 
+  ActivityIndicator 
+} from 'react-native';
+
+import { supabase } from '../../supabase'; 
 
 export default function RegisterScreen() {
   const router = useRouter();
+
+
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!email || !password || !fullName) {
+      Alert.alert('Error', 'Mohon isi semua bidang yang wajib (Nama, Email, Password).');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Konfirmasi password tidak cocok.');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password minimal harus 6 karakter.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            full_name: fullName,
+            user_name: username,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        Alert.alert(
+          'Registrasi Berhasil', 
+          'Akun Anda telah dibuat! Silakan cek email untuk verifikasi (jika diaktifkan) atau langsung login.'
+        );
+        router.push('/auth/login');
+      }
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Terjadi kesalahan tidak diketahui.';
+      Alert.alert('Registrasi Gagal', message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -16,6 +85,7 @@ export default function RegisterScreen() {
         style={styles.card}
         contentContainerStyle={styles.cardContent}
         showsVerticalScrollIndicator={false}>
+        
         <View style={styles.logoWrapper}>
           <Image source={require('@/assets/images/logo.png')} style={styles.logo} contentFit="contain" />
         </View>
@@ -28,6 +98,8 @@ export default function RegisterScreen() {
           placeholderTextColor="#75817f"
           style={styles.input}
           autoCapitalize="words"
+          value={fullName}
+          onChangeText={setFullName}
         />
         <TextInput
           placeholder="Email"
@@ -35,28 +107,44 @@ export default function RegisterScreen() {
           style={styles.input}
           keyboardType="email-address"
           autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
         />
         <TextInput
           placeholder="Username"
           placeholderTextColor="#75817f"
           style={styles.input}
           autoCapitalize="none"
+          value={username}
+          onChangeText={setUsername}
         />
         <TextInput
           placeholder="Password"
           placeholderTextColor="#75817f"
           style={styles.input}
           secureTextEntry
+          value={password}
+          onChangeText={setPassword}
         />
         <TextInput
           placeholder="Confirm Password"
           placeholderTextColor="#75817f"
           style={styles.input}
           secureTextEntry
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
         />
 
-        <Pressable style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Register</Text>
+        <Pressable 
+          style={[styles.primaryButton, loading && { opacity: 0.8 }]} 
+          onPress={handleRegister}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.primaryButtonText}>Register</Text>
+          )}
         </Pressable>
 
         <View style={styles.dividerRow}>

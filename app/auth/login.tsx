@@ -1,10 +1,51 @@
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Pressable,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+} from 'react-native';
+
+import { supabase } from '../../supabase';
 
 export default function LoginScreen() {
 	const router = useRouter();
+	const [email, setEmail] = useState('');
+	const [password, setPassword] = useState('');
+	const [loading, setLoading] = useState(false);
+
+	const handleLogin = async () => {
+		if (!email || !password) {
+			Alert.alert('Error', 'Email dan password wajib diisi.');
+			return;
+		}
+
+		setLoading(true);
+
+		try {
+			const { error } = await supabase.auth.signInWithPassword({
+				email,
+				password,
+			});
+
+			if (error) throw error;
+
+			Alert.alert('Login Berhasil', 'Akun ditemukan. Register kamu sudah berhasil.');
+			router.replace('/home');
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Terjadi kesalahan tidak diketahui.';
+			Alert.alert('Login Gagal', message);
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	return (
 		<SafeAreaView style={styles.screen}>
@@ -21,20 +62,28 @@ export default function LoginScreen() {
 				<Text style={styles.subtitle}>Login to your Account</Text>
 
 				<TextInput
-					placeholder="Username"
+					placeholder="Email"
 					placeholderTextColor="#75817f"
 					style={styles.input}
 					autoCapitalize="none"
+					keyboardType="email-address"
+					value={email}
+					onChangeText={setEmail}
 				/>
 				<TextInput
 					placeholder="Password"
 					placeholderTextColor="#75817f"
 					style={styles.input}
 					secureTextEntry
+					value={password}
+					onChangeText={setPassword}
 				/>
 
-				<Pressable style={styles.loginButton}>
-					<Text style={styles.loginButtonText}>Login</Text>
+				<Pressable
+					style={[styles.loginButton, loading && { opacity: 0.8 }]}
+					onPress={handleLogin}
+					disabled={loading}>
+					{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Login</Text>}
 				</Pressable>
 
 				<View style={styles.dividerRow}>
